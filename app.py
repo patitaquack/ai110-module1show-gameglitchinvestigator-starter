@@ -46,14 +46,24 @@ def check_guess(guess, secret):
             return "Too High", "📉 Go LOWER!"
         return "Too Low", "📈 Go HIGHER!"
 
+# temperature on easy mode fix
+def get_temperature_hint(guess: int, secret: int) -> str:
+    distance = abs(guess - secret)
+    if distance <= 2:
+        return "🔥 Burning hot!"
+    if distance <= 5:
+        return "🌡️ Getting warmer!"
+    if distance <= 9:
+        return "🌤️ Lukewarm..."
+    return "🥶 Way colder!"
 
+# this ensures that a more fair  final score is given
+# make sure that the final score is not a negative
 def update_score(current_score: int, outcome: str, attempt_number: int):
     if outcome == "Win":
-        points = 100 - 10 * (attempt_number + 1)
-        if points < 10:
-            points = 10
+        points = max(10, 100 - 10 * (attempt_number - 2))
         return current_score + points
-
+   
     if outcome == "Too High":
         if attempt_number % 2 == 0:
             return current_score + 5
@@ -76,11 +86,12 @@ difficulty = st.sidebar.selectbox(
     ["Easy", "Normal", "Hard"],
     index=1,
 )
-
+ # different levels should have different number of tries. Every level requires 
+ # something that makes it different ( easier or more difficualt) from each other.
 attempt_limit_map = {
-    "Easy": 6,
+    "Easy": 11,
     "Normal": 8,
-    "Hard": 5,
+    "Hard": 6,
 }
 attempt_limit = attempt_limit_map[difficulty]
 
@@ -131,6 +142,7 @@ with col2:
 with col3:
     show_hint = st.checkbox("Show hint", value=True)
 
+# ensures that history doesn't carry on to a new game
 if new_game:
     st.session_state.attempts = 1
     st.session_state.secret = random.randint(low, high)
@@ -164,6 +176,8 @@ if submit:
 
         if show_hint:
             st.warning(message)
+            if difficulty == "Easy" and outcome != "Win":
+                st.info(get_temperature_hint(guess_int, secret))
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
